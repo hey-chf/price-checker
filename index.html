@@ -6,6 +6,11 @@
     <meta name="theme-color" content="#4CAF50">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- 在<head>标签内添加 -->
+    <script>
+        if(/MicroMessenger/i.test(navigator.userAgent)) {
+            window.location.href = 'wechat-redirect.html';
+        }
+    </script>
     <script src="https://unpkg.com/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
     <title>商品价格查询</title>
     <link rel="manifest" href="manifest.json">

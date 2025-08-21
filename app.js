@@ -1,3 +1,6 @@
+// 微信浏览器检测
+const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
 // Polyfill for iOS Chrome
 if (!window.BarcodeDetector && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     window.BarcodeDetector = {

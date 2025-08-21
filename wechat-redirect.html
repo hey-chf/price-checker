@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器提示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .instructions {
+            margin-top: 30px;
+            line-height: 1.6;
+        }
+        img {
+            width: 80%;
+            max-width: 300px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>扫码功能需要系统浏览器支持</h2>
+    <div class="instructions">
+        <p>1. 点击右上角 <strong>···</strong> 菜单</p>
+        <p>2. 选择 <strong>"在浏览器中打开"</strong></p>
+        <p>3. 建议使用 <strong>Chrome/Safari</strong> 浏览器</p>
+    </div>
+    <script>
+        if(!/MicroMessenger/i.test(navigator.userAgent)) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
