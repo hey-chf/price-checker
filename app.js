@@ -1,6 +1,13 @@
 // 微信浏览器检测
 const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
-
+const scannerView = document.createElement('div');
+scannerView.className = 'scanner-view';
+scannerView.innerHTML = `
+    <video id="scanner-video" autoplay playsinline></video>
+    <div class="scanner-guide">将条形码对准扫描框</div>
+    <button id="cancel-scan" class="cancel-btn">取消</button>
+`;
+document.body.appendChild(scannerView);
 // Polyfill for iOS Chrome
 if (!window.BarcodeDetector && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     window.BarcodeDetector = {
