@@ -1,11 +1,10 @@
-// 在app.js顶部添加此代码（替换原有BarcodeDetector检测）
-if (!window.BarcodeDetector) {
+// Polyfill for iOS Chrome
+if (!window.BarcodeDetector && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     window.BarcodeDetector = {
-        getSupportedFormats: async () => ['qr_code'],
-        detect: async (image) => {
-            const result = await Tesseract.recognize(image);
-            return result.data.text.match(/\b\d{8,14}\b/) ? 
-                [{ rawValue: result.data.text.match(/\b\d{8,14}\b/)[0] }] : [];
+        async detect(image) {
+            const { data } = await Tesseract.recognize(image);
+            const barcode = data.text.match(/\b\d{8,14}\b/);
+            return barcode ? [{ rawValue: barcode[0] }] : [];
         }
     };
 }
@@ -23,65 +22,46 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-let currentMode = 'query'; // query or add
-
-// 模式切换
-document.getElementById('queryMode').addEventListener('click', () => {
-    currentMode = 'query';
-    document.getElementById('queryMode').classList.add('active');
-    document.getElementById('addMode').classList.remove('active');
-    document.getElementById('addForm').style.display = 'none';
-});
-
-document.getElementById('addMode').addEventListener('click', () => {
-    currentMode = 'add';
-    document.getElementById('addMode').classList.add('active');
-    document.getElementById('queryMode').classList.remove('active');
-    document.getElementById('addForm').style.display = 'block';
-});
-
-// 检测iOS Chrome浏览器
-const isIOSChrome = /CriOS/.test(navigator.userAgent);
-const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-
 document.getElementById('scanBtn').addEventListener('click', async () => {
-    if (isIOS && !isIOSChrome) {
-        alert('iOS系统请使用Chrome浏览器');
-        return;
-    }
-
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: 'environment',
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
             }
         });
-
-    const barcodeDetector = new BarcodeDetector();
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
-            const video = document.createElement('video');
-            document.body.appendChild(video);
-            video.srcObject = stream;
-            video.play();
-
-            const detectBarcode = () => {
-                barcodeDetector.detect(video)
-                    .then(barcodes => {
-                        if (barcodes.length > 0) {
-                            const barcode = barcodes[0];
-                            queryPrice(barcode.rawValue);
-                            stream.getTracks().forEach(track => track.stop());
-                            video.remove();
-                        } else {
-                            requestAnimationFrame(detectBarcode);
-                        }
-                    });
-            };
-            detectBarcode();
-        });
+        
+        const video = document.createElement('video');
+        video.playsInline = true;
+        video.srcObject = stream;
+        document.body.appendChild(video);
+        await video.play();
+        
+        const scanFrame = async () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            try {
+                const barcodes = await window.BarcodeDetector.detect(canvas);
+                if (barcodes.length > 0) {
+                    stream.getTracks().forEach(track => track.stop());
+                    video.remove();
+                    queryPrice(barcodes[0].rawValue);
+                } else {
+                    requestAnimationFrame(scanFrame);
+                }
+            } catch (e) {
+                console.error('Scan error:', e);
+                alert('扫码失败，请尝试对准商品条形码');
+            }
+        };
+        scanFrame();
+    } catch (e) {
+        alert('摄像头访问失败: ' + e.message);
+    }
 });
 
 async function queryPrice(barcode) {
@@ -89,7 +69,6 @@ async function queryPrice(barcode) {
     resultDiv.innerHTML = '查询中...';
     
     // 这里需要连接Supabase获取价格
-    // 实际使用时需要替换为你的Supabase配置
     const SUPABASE_URL = 'YOUR_SUPABASE_URL';
     const SUPABASE_KEY = 'YOUR_SUPABASE_KEY';
     
@@ -111,57 +90,5 @@ async function queryPrice(barcode) {
         `;
     } else {
         resultDiv.innerHTML = '未找到该商品';
-        if(currentMode === 'add') {
-            resultDiv.dataset.barcode = barcode;
-            document.getElementById('addForm').style.display = 'block';
-        }
     }
-}
-
-// 保存商品信息
-document.getElementById('saveBtn').addEventListener('click', async () => {
-    const barcode = document.getElementById('result').dataset.barcode;
-    const name = document.getElementById('productName').value;
-    const price = parseFloat(document.getElementById('productPrice').value);
-    
-    if(!name || isNaN(price)) {
-        alert('请填写完整的商品信息');
-        return;
-    }
-
-    const { error } = await supabaseClient
-        .from('products')
-        .insert([{ barcode, name, price }]);
-    
-    if(error) {
-        alert(`保存失败: ${error.message}`);
-    } else {
-        alert('商品信息保存成功');
-        document.getElementById('productName').value = '';
-        document.getElementById('productPrice').value = '';
-        document.getElementById('addForm').style.display = 'none';
-    }
-});
-
-// 替换原有扫码函数
-const scanBarcode = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' }
-    });
-    
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    await video.play();
-    
-    // 使用Tesseract作为后备方案
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    
-    const result = await Tesseract.recognize(canvas);
-    const barcode = result.data.text.match(/\b\d{8,14}\b/);
-    
-    stream.getTracks().forEach(track => track.stop());
-    return barcode ? barcode[0] : null;
 }
