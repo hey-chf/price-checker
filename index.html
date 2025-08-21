@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50">
+    <title>商品价格查询</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>商品管理系统</h1>
+        <div class="mode-switch">
+            <button id="queryMode" class="btn active">查询模式</button>
+            <button id="addMode" class="btn">录入模式</button>
+        </div>
+        <button id="scanBtn" class="btn">扫码</button>
+        <div id="result" class="result"></div>
+        <div id="addForm" class="form-container" style="display:none;">
+            <h3>商品信息录入</h3>
+            <input type="text" id="productName" placeholder="商品名称">
+            <input type="number" id="productPrice" placeholder="价格" step="0.01">
+            <button id="saveBtn" class="btn">保存</button>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
