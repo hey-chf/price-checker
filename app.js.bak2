@@ -57,12 +57,15 @@ document.getElementById('scanBtn').addEventListener('click', async () => {
             try {
                 const barcodes = await window.BarcodeDetector.detect(canvas);
                 if (barcodes.length > 0) {
+                    // 关闭摄像头
                     stream.getTracks().forEach(track => track.stop());
-                    video.remove();
-                    queryPrice(barcodes[0].rawValue);
-                } else {
-                    requestAnimationFrame(scanFrame);
+                    // 移除视频元素
+                    document.querySelector('.scanner-view')?.remove();
+                    // 跳转到商品信息
+                    await queryPrice(barcodes[0].rawValue);
+                    return;
                 }
+                requestAnimationFrame(scanFrame);
             } catch (e) {
                 console.error('Scan error:', e);
                 alert('扫码失败，请尝试对准商品条形码');
