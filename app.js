@@ -40,11 +40,24 @@ document.getElementById('addMode').addEventListener('click', () => {
     document.getElementById('addForm').style.display = 'block';
 });
 
-document.getElementById('scanBtn').addEventListener('click', () => {
-    if (!('BarcodeDetector' in window)) {
-        alert('您的浏览器不支持扫码功能，请使用最新版Chrome或Edge浏览器');
+// 检测iOS Chrome浏览器
+const isIOSChrome = /CriOS/.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+
+document.getElementById('scanBtn').addEventListener('click', async () => {
+    if (isIOS && !isIOSChrome) {
+        alert('iOS系统请使用Chrome浏览器');
         return;
     }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            }
+        });
 
     const barcodeDetector = new BarcodeDetector();
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
