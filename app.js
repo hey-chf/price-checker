@@ -1,3 +1,15 @@
+// 在app.js顶部添加此代码（替换原有BarcodeDetector检测）
+if (!window.BarcodeDetector) {
+    window.BarcodeDetector = {
+        getSupportedFormats: async () => ['qr_code'],
+        detect: async (image) => {
+            const result = await Tesseract.recognize(image);
+            return result.data.text.match(/\b\d{8,14}\b/) ? 
+                [{ rawValue: result.data.text.match(/\b\d{8,14}\b/)[0] }] : [];
+        }
+    };
+}
+
 // 注册Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -117,3 +129,26 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
         document.getElementById('addForm').style.display = 'none';
     }
 });
+
+// 替换原有扫码函数
+const scanBarcode = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' }
+    });
+    
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    await video.play();
+    
+    // 使用Tesseract作为后备方案
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    
+    const result = await Tesseract.recognize(canvas);
+    const barcode = result.data.text.match(/\b\d{8,14}\b/);
+    
+    stream.getTracks().forEach(track => track.stop());
+    return barcode ? barcode[0] : null;
+}
